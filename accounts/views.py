@@ -24,7 +24,7 @@ def user_login(request):
 
 def user_logout(request):
     logout(request)
-    return redirect('accounts:login')
+    return redirect('/')
 
 
 def signup(request):

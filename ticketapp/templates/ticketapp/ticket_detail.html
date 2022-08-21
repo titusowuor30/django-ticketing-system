@@ -1,79 +1,148 @@
-{% extends 'ticketapp/base.html' %}
-
-
-{% block content %}
+{% extends 'ticketapp/base.html' %} {% block content %}
 
 <div class="container">
-    <h1>{{object.title}}</h1>
-    <p>Customer name: {{object.customer_full_name}}</p>
-    <p>Phone number: {{object.customer_phone_number}}</p>
-    <p>Email: <a href="mailto:{{object.customer_email}}">{{object.customer_email}}</a></p>
-    <p>Urgent: {{object.urgent_status}}</p>
-    <p>Resolved: {{object.completed_status}}</p>
-    <p>Assigned To: {{object.assigned_to.first_name}} {{object.assigned_to.last_name}}</p>
-    <p>Created: {{object.created_date}}</p>
+  <h5><strong>{{object.title}}</strong></h5>
+  <p>Client Name: {{object.customer_full_name}}</p>
+  <p>Phone number: {{object.customer_phone_number}}</p>
+  <p>
+    Email:
+    <a href="mailto:{{object.customer_email}}">{{object.customer_email}}</a>
+  </p>
+  <p>
+    Urgency:
+    <span
+      class="badge badge-pill {% if object.ticket_priority == 'Urgent' %} bg-danger {% elif object.ticket_priority == 'Medium' %} bg-warning {% else %} bg-secondary {% endif %} text-white"
+      >{{object.ticket_priority}}</span
+    >
+  </p>
+  {% if object.completed_status %}
+  <p class="badge badge-pill bg-info text-white">Resolved</p>
+  {% else %}
+  <p class="badge badge-pill bg-danger text-white">Unresolved</p>
+  {% endif %}
+  <p>
+    Assigned To:
+    {{object.assigned_to.username}}&nbsp;{{object.assigned_to.last_name}}
+  </p>
+  <p>Created: {{object.created_date}}</p>
 
-    <br>
-
-    <p>{{object.issue_description}}</p>
+  <br />
+      <b>Issue Description</b><br />
+  <p>
+<blockquote>{{object.issue_description|safe}}</blockquote>
+    <br />
+    {% if object.mediafiles_set.all|length > 0 %}
+    <span
+      >Attachments <br />{% for item in object.mediafiles_set.all %}
+      <a href="{% url 'ticketapp:ticket-list' %}{{item.file}}" class="img-fluid"><i class='fa fa-file'></i></a>
+      {% endfor %}
+    </span>
+    {% endif %}
+  </p>
 </div>
 
-<div class="container d-flex mt-2 ">
-
-    {% if user.is_staff %}
-        {% if object.completed_status != True %}
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#markResolvedModal">Mark Resolved</button>
-        {% endif %}
-    {% endif %}
-    
-    <a href="{% url 'ticketapp:update-ticket' pk=object.pk %}" class="btn btn-primary mx-2">Edit</a>
-    <a href="{% url 'ticketapp:delete-ticket' pk=object.pk %}" class="btn btn-danger mx-2">Delete</a>
+<div class="container d-flex mt-2">
+  {% if user.is_staff %} {% if object.completed_status != True %}
+  <button
+    type="button"
+    class="btn btn-success"
+    data-bs-toggle="modal"
+    data-bs-target="#markResolvedModal"
+  >
+    Reply
+  </button>
+  {% elif object.completed_status == True %}
+  <button
+    type="button"
+    class="btn btn-success"
+    data-bs-toggle="modal"
+    data-bs-target="#markResolvedModal"
+  >
+    Merge
+  </button>
+  {% endif %} {% endif %}
+  <a
+    href="{% url 'ticketapp:update-ticket' pk=object.pk %}"
+    class="btn btn-primary mx-2"
+    >Edit</a
+  >
+  <a
+    href="{% url 'ticketapp:delete-ticket' pk=object.pk %}"
+    class="btn btn-danger mx-2"
+    >Delete</a
+  >
 </div>
 
 {% if comments %}
-    <div class="container mt-4">
+<div class="container mt-4">
+  <h5>Comments</h5>
 
-        <h2>Note</h2>
+  {% for comment in comments %}
+  <div class="bg-light mt-2 mb-2">
+    <p class="text-secondary">
+      @{{comment.user.username}} {{comment.created_date}}
+    </p>
+    <p>{{comment.text|safe}}</p>
+  </div>
 
-        {% for comment in comments %}
-        <div class="bg-light mt-2 mb-2">
-            <p class="text-secondary">@{{comment.user.username}} {{comment.created_date}}</p>
-            <p>{{comment.text}}</p>
-        </div>
-
-        {% endfor %}
-    </div>
+  {% endfor %}
+</div>
 
 {% endif %}
 
 <!-- Modal -->
-<div class="modal fade" id="markResolvedModal" tabindex="-1" aria-labelledby="markResolvedModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="markResolvedModalLabel">Add Note</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div
+  class="modal fade bd-example-modal-lg"
+  id="markResolvedModal"
+  tabindex="-1"
+  aria-labelledby="markResolvedModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="markResolvedModalLabel">Add Note</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        {{email_form.media}}
+        <form
+          action="{% url 'ticketapp:mark-resolved' id=object.pk %}"
+          method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="form-group mt-2 mb-2">
+            {{email_form.subject}}
+            {{email_form.attach}}
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="closeticket" name="closeticket">
+              <label class="form-check-label" for="exampleCheck1">Reply and close ticket</label>
+            </div>
+            <input type="submit" class="btn btn-secondary mt-2" />
           </div>
-          <div class="modal-body">
-            <form action="{% url 'ticketapp:mark-resolved' id=object.pk %}" method="post">
-                {% csrf_token %}
-                <div class="form-group mt-2 mb-2">
-        
-                    <textarea name="comment" cols="15" rows="10" class="form-control" placeholder="Add note on how issue was solved..."></textarea>
-        
-                    <input type="submit" class="btn btn-secondary mt-2">
-        
-                </div>
-        
-            </form>
-          </div>
-        </div>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
-
-
-
-
-
-
 {% endblock content %}
+{% block extra_scripts %}
+<script>
+  function getValue(){
+    close_ticket_check=document.getElementById("closeticket")
+    if(close_ticket_check.checked == true){
+      close_ticket_check.value=true
+      console.log(close_ticket_check)
+    }else{
+      close_ticket_check.value=false
+      console.log(close_ticket_check)
+    }
+        console.log(close_ticket_check)
+    console.log(close_ticket_check)
+  }
+</script>
+{% endblock extra_scripts %}

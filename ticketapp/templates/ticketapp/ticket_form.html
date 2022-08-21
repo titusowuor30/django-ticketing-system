@@ -1,70 +1,70 @@
-{% extends 'ticketapp/base.html' %}
-
-{% block content %}
+{% extends 'ticketapp/base.html' %} {% block content %} {% block extra_head %}
+{{form.media}} {% endblock extra_head %}
 
 <!-- Page Heading -->
 <h1 class="h3 mb-2 text-gray-800">Add Ticket</h1>
+{{ form.media }}
+<form class="" method="POST" enctype="multipart/form-data">
+  {% if form.errors %}
+  <ul class="messages">
+    {% for error in form.errors %}
+    <li class="danger">{{ error }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %} {% csrf_token %}
+  <div class="form-group">
+    <label for="id_title">Title</label>
+    {{form.title}}
+  </div>
 
-<form class="" method="POST">
-        {% if form.errors %}
-            <ul class="messages">
+  <div class="form-group">
+    <label for="id_customer_full_name">Customer full name</label>
+    {{form.customer_full_name}}
+  </div>
 
-                {% for error in form.errors %}
-                    <li class="danger">{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+  <div class="form-group">
+    <label for="id_customer_phone_number">Phone number</label>
+    {{form.customer_phone_number}}
+  </div>
 
+  <div class="form-group">
+    <label for="id_customer_email">Email</label>
+    {{form.customer_email}}
+  </div>
+  <div class="form-group">
+    <label for="id_issue_description">Description</label>
+    {{form.issue_description}}
+  </div>
 
-    {% csrf_token %}
-    <div class="form-group">
-        <label for="id_title">Title</label>
-        {{form.title}}
-    </div>
+  <div class="form-group">
+    <label for="id_ticket_section">Select Section</label>
+    {{form.ticket_section}}
+  </div>
 
-    <div class="form-group">
-        <label for="id_customer_full_name">Customer full name</label>
-        {{form.customer_full_name}}
-    </div>
+  <div>
+    <label for="id_urgent_status">Urgency</label>
+    {{form.ticket_priority}}
+  </div>
 
-    <div class="form-group">
-        <label for="id_customer_phone_number">Phone number</label>
-        {{form.customer_phone_number}}
-    </div>
+  <div class="form-group pt-2 pb-2">
+    <label for="id_assigned_to">Assign Technician</label>
+    {{form.assigned_to}}
+  </div>
 
-    <div class="form-group">
-        <label for="id_customer_email">Email</label>
-        {{form.customer_email}}
-    </div>
-    <div class="form-group">
-        <label for="id_issue_description">Description</label>
-        {{form.issue_description}}
-    </div>
+  <div class="form-group pt-2 pb-2">{{form.attach}}</div>
 
-    <div class="form-group">
-        <label for="id_ticket_section">Select Section</label>
-        {{form.ticket_section}}
-    </div>
+  <br />
 
-    <div>
-        <label for="id_urgent_status">Urgent</label>
-        {{form.urgent_status}}
-    </div>
+  <button class="w-100 mb-2 btn btn-lg rounded-3 btn-primary" type="submit">
+    Create
+  </button>
+  <a
+    href="{% url 'ticketapp:ticket-list' %}"
+    class="w-100 mb-2 btn btn-lg rounded-3 btn-danger"
+    >Cancel</a
+  >
 
-    <div class="form-group pt-2 pb-2">
-        <label for="id_assigned_to">Assign Technician</label>
-        {{form.assigned_to}}
-    </div>
-
-
-    <br>
-
-    <button class="w-100 mb-2 btn btn-lg rounded-3 btn-primary" type="submit">Create</button>
-    <a href="{% url 'ticketapp:ticket-list' %}" class="w-100 mb-2 btn btn-lg rounded-3 btn-danger" >Cancel</a>
-
-    <hr class="my-4">
-
+  <hr class="my-4" />
 </form>
-
 
 {% endblock content %}

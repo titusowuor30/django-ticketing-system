@@ -10,7 +10,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>ICT Helpdesk</title>
+    <title>Helpdesk</title>
 
     <!-- Custom fonts for this template-->
     <link href="{% static 'vendor/fontawesome-free/css/all.min.css' %}" rel="stylesheet" type="text/css">
@@ -32,11 +32,11 @@
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
             <!-- Sidebar - Brand -->
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/">
                 <div class="sidebar-brand-icon ">
                     <i class="fas fa-home"></i>
                 </div>
-                <div class="sidebar-brand-text mx-3">ICT Helpdesk</div>
+                <div class="sidebar-brand-text mx-3">Helpdesk</div>
             </a>
 
             <!-- Divider -->
@@ -83,17 +83,12 @@
             </li>
             <!-- Divider -->
             <hr class="sidebar-divider">
-
-
-
-
             <!-- Nav Item - Charts -->
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'ticketapp:user-performance-list' %}">
                     <i class="fas fa-fw fa-chart-area"></i>
                     <span>Statistics</span></a>
             </li>
-
 
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'accounts:logout' %}">
@@ -422,6 +417,13 @@
 
 
     <script>
+        function fetch_data() {
+            fetch('youraddress.com/data') //Fetch data from the address
+            .then(()=>{
+            console.log('endpoit hit')
+            }) //get the JSON section from the response
+            .then(setTimeout(fetch_data(), 10000)); //Finally, set timeout for 10 seconds and call function again
+        }
 
         // Set new default font family and font color to mimic Bootstrap's default styling
         Chart.defaults.global.defaultFontFamily = 'Nunito', '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
@@ -463,11 +465,11 @@
         var myPieChart = new Chart(ctx2, {
             type: 'doughnut',
             data: {
-                labels: ["Software", "Hardware", "Application", "Infrastructure and Networking", "Database Administrator"],
+                labels: ["Software", "Hardware", "Application", "Infrastructure and Networking", "Database","HR","Technical","General"],
                 datasets: [{
-                    data: [`{{software_tickets}}`, `{{hardware_tickets}}`, `{{applications_tickets}}`, `{{infracture_tickets}}`, `{{dbadmin_tickets}}`],
-                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#A76D60', '#F283B6'],
-                    hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#E0D0C1', '#EDBFB7'],
+                    data: [`{{software_tickets}}`, `{{hardware_tickets}}`, `{{applications_tickets}}`, `{{infracture_tickets}}`, `{{dbadmin_tickets}}`, `{{hr_tickets}}`, `{{technical_tickets}}`, `{{general_tickets}}`],
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#A76D60', '#F283B6','#0000FF','#AF00FF','#00008B'],
+                    hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#E0D0C1', '#EDBFB7','#A100FF','#0000FF','#F283B6'],
                     hoverBorderColor: "rgba(234, 236, 244, 1)",
                 }],
             },

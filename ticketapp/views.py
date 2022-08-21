@@ -1,5 +1,11 @@
+from email import message
+from django.shortcuts import render
+from django.http.response import HttpResponse
+import os
+import mimetypes
 import datetime
-from django.shortcuts import render, HttpResponseRedirect, get_object_or_404
+from operator import concat
+from django.shortcuts import redirect, render, HttpResponseRedirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.views import generic
 from django.contrib.auth.models import User
@@ -8,14 +14,17 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Count
-from django.core.mail import send_mail
 from django.conf import settings
-from .models import Ticket, Comment, EmailDetails
-from .forms import TicketForm, TicketUpdateForm
-
+from .models import *
+from .forms import *
 from .get_email import EmailDownload
+from ticketsupdater.import_email_tickets import import_email
+from django.utils import timezone
 
-# Create your views here.
+
+def sync_tickets(request):
+    import_email()
+    return redirect('ticketapp:all-tickets')
 
 
 class TicketListView(LoginRequiredMixin, generic.ListView):
@@ -23,56 +32,71 @@ class TicketListView(LoginRequiredMixin, generic.ListView):
     template_name = 'ticketapp/index.html'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if self.request.user.is_superuser:
-            context['all_issues'] = Ticket.objects.all().count()
-            context['urgent_count'] = Ticket.objects.filter(
-                urgent_status=True).count()
-            context['resolved_count'] = Ticket.objects.filter(
-                completed_status=True).count()
-            context['unresolved_count'] = Ticket.objects.filter(
-                completed_status=False).count()
-            context['normal_user_list'] = Ticket.objects.filter(
-                user=self.request.user)
-            context['staff_user_list'] = Ticket.objects.filter(
-                assigned_to=self.request.user)
-            context['software_tickets'] = Ticket.objects.filter(
-                ticket_section='Software').count()
-            context['hardware_tickets'] = Ticket.objects.filter(
-                ticket_section='Hardware').count()
-            context['applications_tickets'] = Ticket.objects.filter(
-                ticket_section='Applications').count()
-            context['infracture_tickets'] = Ticket.objects.filter(
-                ticket_section='Infrastructure and Networking').count()
-            context['dbadmin_tickets'] = Ticket.objects.filter(
-                ticket_section='Database Administrator').count()
+        try:
+            context = super().get_context_data(**kwargs)
+            if self.request.user.is_superuser:
+                context['all_issues'] = Ticket.objects.all().count()
+                context['urgent_count'] = Ticket.objects.filter(
+                    ticket_priority="Urgent").count()
+                context['resolved_count'] = Ticket.objects.filter(
+                    completed_status=True).count()
+                context['unresolved_count'] = Ticket.objects.filter(
+                    completed_status=False).count()
+                context['normal_user_list'] = Ticket.objects.filter(
+                    user=self.request.user)
+                context['staff_user_list'] = Ticket.objects.filter(
+                    assigned_to=self.request.user)
+                context['software_tickets'] = Ticket.objects.filter(
+                    ticket_section='Software').count()
+                context['hardware_tickets'] = Ticket.objects.filter(
+                    ticket_section='Hardware').count()
+                context['applications_tickets'] = Ticket.objects.filter(
+                    ticket_section='Applications').count()
+                context['infracture_tickets'] = Ticket.objects.filter(
+                    ticket_section='Infrastructure and Networking').count()
+                context['dbadmin_tickets'] = Ticket.objects.filter(
+                    ticket_section='Database').count()
+                context['technical_tickets'] = Ticket.objects.filter(
+                    ticket_section='Technical').count()
+                context['hr_tickets'] = Ticket.objects.filter(
+                    ticket_section='HR').count()
+                context['general_tickets'] = Ticket.objects.filter(
+                    ticket_section='General').count()
 
-        elif self.request.user.is_staff:
-            context['all_issues'] = Ticket.objects.filter(
-                assigned_to=self.request.user).count()
-            context['urgent_count'] = Ticket.objects.filter(
-                assigned_to=self.request.user, urgent_status=True).count()
-            context['resolved_count'] = Ticket.objects.filter(
-                assigned_to=self.request.user, completed_status=True).count()
-            context['unresolved_count'] = Ticket.objects.filter(
-                assigned_to=self.request.user, completed_status=False).count()
-            context['normal_user_list'] = Ticket.objects.filter(
-                user=self.request.user)
-            context['staff_user_list'] = Ticket.objects.filter(
-                assigned_to=self.request.user)
+            elif self.request.user.is_staff:
+                context['all_issues'] = Ticket.objects.filter(
+                    assigned_to=self.request.user).count()
+                context['urgent_count'] = Ticket.objects.filter(
+                    assigned_to=self.request.user, ticket_priority="Urgent").count()
+                context['resolved_count'] = Ticket.objects.filter(
+                    assigned_to=self.request.user, completed_status=True).count()
+                context['unresolved_count'] = Ticket.objects.filter(
+                    assigned_to=self.request.user, completed_status=False).count()
+                context['normal_user_list'] = Ticket.objects.filter(
+                    user=self.request.user)
+                context['staff_user_list'] = Ticket.objects.filter(
+                    assigned_to=self.request.user)
 
-            context['software_tickets'] = Ticket.objects.filter(
-                ticket_section='Software', assigned_to=self.request.user).count()
-            context['hardware_tickets'] = Ticket.objects.filter(
-                ticket_section='Hardware', assigned_to=self.request.user).count()
-            context['applications_tickets'] = Ticket.objects.filter(
-                ticket_section='Applications', assigned_to=self.request.user).count()
-            context['infracture_tickets'] = Ticket.objects.filter(
-                ticket_section='Infrastructure and Networking', assigned_to=self.request.user).count()
-            context['dbadmin_tickets'] = Ticket.objects.filter(
-                ticket_section='Database Administrator', assigned_to=self.request.user).count()
+                context['software_tickets'] = Ticket.objects.filter(
+                    ticket_section='Software', assigned_to=self.request.user).count()
+                context['hardware_tickets'] = Ticket.objects.filter(
+                    ticket_section='Hardware', assigned_to=self.request.user).count()
+                context['applications_tickets'] = Ticket.objects.filter(
+                    ticket_section='Applications', assigned_to=self.request.user).count()
+                context['infracture_tickets'] = Ticket.objects.filter(
+                    ticket_section='Infrastructure and Networking', assigned_to=self.request.user).count()
+                context['dbadmin_tickets'] = Ticket.objects.filter(
+                    ticket_section='Database', assigned_to=self.request.user).count()
+                context['technical_tickets'] = Ticket.objects.filter(
+                    ticket_section='Technical').count()
+                context['hr_tickets'] = Ticket.objects.filter(
+                    ticket_section='HR').count()
+                context['general_tickets'] = Ticket.objects.filter(
+                    ticket_section='General').count()
 
-        return context
+            return context
+        except Exception as e:
+            print(e)
 
 
 class TicketDetailView(LoginRequiredMixin, generic.DetailView):
@@ -82,6 +106,8 @@ class TicketDetailView(LoginRequiredMixin, generic.DetailView):
         context = super().get_context_data(**kwargs)
         context['comments'] = Comment.objects.filter(
             ticket=self.get_object()).order_by('-created_date')
+        form = EmaiailAttachmentForm
+        context['email_form'] = form
         return context
 
 
@@ -90,8 +116,42 @@ class TicketCreateView(LoginRequiredMixin, generic.CreateView):
     form_class = TicketForm
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
-        return super().form_valid(form)
+        try:
+            form.instance.user = self.request.user
+            super().form_valid(form)  # create ticket object
+            ticket = self.object
+            # add attachments if any
+            files = self.request.FILES.getlist('attach')
+            if files:
+                for file in files:
+                    ticket.mediafiles_set.get_or_create(file=file)
+            # send mail if true
+            config = OutgoinEmailSettings.objects.all()[0]
+            if config.send_auto_email_on_ticket_creation:
+                attachments = []
+                subject = "Issue received"
+                receipient_list = [self.request.POST['customer_email'], ]
+                print(receipient_list)
+                message = config.code_for_automated_reply.replace(
+                    '[id]', ticket.ticket_id).replace('[request_description]', ticket.issue_description).replace('[tags]', 'None').replace('[date]', str(timezone.now()))
+                # send mail to client
+                EmailDownload.send_email(self.request,
+                                         subject, message, receipient_list, attachments)
+            if config.send_auto_email_on_agent_assignment:
+                # send mail to assignee
+                domain = self.request.META['HTTP_HOST']
+                protocol = 'https' if self.request.is_secure() else 'http'
+                ticket_url = protocol+"://"+domain + \
+                    '/ticket-detail/{}/'.format(ticket.id)
+                message = config.code_for_automated_assign.replace(
+                    '[id]', ticket.ticket_id).replace('[request_description]', ticket.issue_description).replace('[tags]', 'None').replace('[date]', str(timezone.now())).replace('[ticket_link]', ticket_url).replace('[assignee]', ticket.assigned_to.username)
+                receipient_list = [ticket.assigned_to.email, ]
+                print("receipient_list:".format(receipient_list))
+                EmailDownload.send_email(self.request,
+                                         "Ticket assignmet:(#{})".format(ticket.ticket_id), message, receipient_list, files)
+        except Exception as e:
+            print("ticket create error:{}".format(e))
+        return redirect('ticketapp:ticket-list')
 
 
 class TicketUpdateView(LoginRequiredMixin, generic.UpdateView):
@@ -107,7 +167,11 @@ class TicketDeleteView(LoginRequiredMixin, generic.DeleteView):
 
 @login_required
 def ticket_list(request):
-    tickets = Ticket.objects.all()
+    if request.user.is_superuser:
+        tickets = Ticket.objects.all()
+    else:
+        tickets = Ticket.objects.filter(
+            assigned_to=request.user)
     return render(request, 'ticketapp/allissues.html', {'tickets': tickets})
 
 
@@ -115,10 +179,10 @@ def ticket_list(request):
 def urgent_ticket_list(request):
     if request.user.is_superuser:
         tickets = Ticket.objects.filter(
-            urgent_status=True)
+            ticket_priority='Urgent')
     else:
         tickets = Ticket.objects.filter(
-            assigned_to=request.user, urgent_status=True)
+            assigned_to=request.user, ticket_priority='Urgent')
     return render(request, 'ticketapp/urgent.html', {'tickets': tickets})
 
 
@@ -146,24 +210,38 @@ def unresolved_tickets(request):
 
 @login_required
 def mark_ticket_as_resolved(request, id):
-    if request.method == 'POST':
-        comment = request.POST['comment']
-        ticket = Ticket.objects.get(id=id)
-        user = request.user
-        date_time = datetime.datetime.now()
-        ticket.resolved_by = user
-        ticket.resolved_date = date_time
-        ticket.completed_status
-        Comment.objects.create(ticket=ticket, user=user, text=comment)
-        Ticket.objects.filter(id=id).update(
-            completed_status=True, resolved_by=user, resolved_date=date_time)
-
-        subject = 'Issue resolved'
-        message = f'Good day.\n Please note your issue: \n{ticket.issue_description}\n has been resolved successfully\nRegards,\n ICT Helpdesk'
-        email_from = settings.EMAIL_HOST_USER
-        recipient_list = [ticket.customer_email, ]
-        send_mail(subject, message, email_from, recipient_list)
-
+    try:
+        if request.method == 'POST':
+            comment = request.POST['subject']
+            ticket = Ticket.objects.get(id=id)
+            user = request.user
+            date_time = datetime.datetime.now()
+            ticket.resolved_by = user
+            ticket.resolved_date = date_time
+            ticket.completed_status
+            config = OutgoinEmailSettings.objects.all()[0]
+            Comment.objects.create(ticket=ticket, user=user, text=comment)
+            message = config.code_for_agent_reply.replace(
+                '[id]', ticket.ticket_id).replace('[tags]', 'None').replace('[date]', str(timezone.now()))
+            subject = 'Ticket:(#{}) Updated'.format(ticket.ticket_id)
+            print("Close ticket:{}".format(request.POST.get('closeticket')))
+            if request.POST.get('closeticket') == 'on':
+                Ticket.objects.filter(id=id).update(
+                    completed_status=True, resolved_by=user, resolved_date=date_time)
+                message = 'Your ticket (#({}) has been close by {}.\nIf you are not fully satisfied with the issue,submit another ticket to Helpdesk'.format(
+                    ticket.ticket_id, user)
+                subject = 'Ticket:(#{}) Closed'.format(ticket.ticket_id)
+            recipient_list = [ticket.objects.values('assigned_to__email'), ]
+            print("Files:{}".format(
+                request.FILES.getlist('attach')))
+            if len(request.FILES.getlist('attach')) > 0:
+                attachments = request.FILES.getlist('attach')
+            else:
+                attachments = []
+            EmailDownload.send_email(request,
+                                     subject, message, recipient_list, attachments)
+    except Exception as e:
+        print(e)
     return HttpResponseRedirect(reverse("ticketapp:ticket-detail", kwargs={'pk': id}))
 
 
@@ -243,10 +321,11 @@ class UserPerformanceListView(LoginRequiredMixin, generic.ListView):
         context = super().get_context_data(**kwargs)
         vals = Ticket.objects.values('resolved_by__username').annotate(
             resolved_count=Count('resolved_by'))
-
-        my_users = [str(x['resolved_by__username'])
-                    for x in vals]
+        ticket = Ticket.objects.all().first()
+        print(ticket.assigned_to.email)
+        my_users = [str(x['resolved_by__username']) for x in vals]
         my_users.pop(0)
+        print(my_users)
         context['my_users'] = my_users
         user_num_tickets = [i['resolved_count']
                             for i in vals]
@@ -300,13 +379,41 @@ def add_email(request):
 
 
 def get_emails(request):
-    email = 'icthelpdesk23@gmail.com'
-    password = 'tin_ashe10#1'
     try:
-        EmailDownload(email, password).login_to_imap_server()
-        messages.success(request, "Email retrieved successfully")
+        imap_settings = ImapSettings.objects.all()[0]
+        print(imap_settings.email_id, imap_settings.email_password)
+        EmailDownload(request, imap_settings.email_id,
+                      imap_settings.email_password).login_to_imap_server()
+        messages.success(request, "Emails retrieved successfully")
     except Exception as e:
         print(e)
         messages.error(request, "Failed to retrieve emails")
-
     return HttpResponseRedirect('/')
+
+
+# Import mimetypes module
+# import os module
+# Import HttpResponse module
+# Import render module
+
+# Define function to download pdf file using template
+
+def download_file(request, filename=''):
+    if filename != '':
+        # Define Django project base directory
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Define the full file path
+        filepath = BASE_DIR + '/filedownload/Files/' + filename
+        # Open the file for reading content
+        path = open(filepath, 'rb')
+        # Set the mime type
+        mime_type, _ = mimetypes.guess_type(filepath)
+        # Set the return value of the HttpResponse
+        response = HttpResponse(path, content_type=mime_type)
+        # Set the HTTP header for sending to browser
+        response['Content-Disposition'] = "attachment; filename=%s" % filename
+        # Return the response value
+        return response
+    else:
+        # Load the template
+        return redirect('ticketapp:ticket-list')

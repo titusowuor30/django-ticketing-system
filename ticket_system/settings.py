@@ -9,11 +9,12 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
-
+#from ticketapp.models import *
 from pathlib import Path
-
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+#email_settings = OutgoinEmailSettings.objects.all()
 
 
 # Quick-start development settings - unsuitable for production
@@ -37,9 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'tinymce',
     'accounts',
     'ticketapp',
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -77,8 +82,12 @@ WSGI_APPLICATION = 'ticket_system.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'helpdesk',
+        'HOST': 'localhost',
+        'USER': 'root',
+        'PASSWORD': 'root',
+        'PORT': 3307,
     }
 }
 
@@ -107,7 +116,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Nairobi'
 
 USE_I18N = True
 
@@ -118,19 +127,65 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static'
-]
-
+#STATIC_ROOT = os.path.join('static')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
+MEDIA_URL = '/media/'  # This is just for url i.e https://l.me/media/l.jpg
+# This is the folder the image will be uploaded
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# .format(email_settings.email_backed)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = ''  # email_settings.email_host  # 'smtp.gmail.com'
 EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'icthelpdesk23@gmail.com'
-EMAIL_HOST_PASSWORD = 'tin_ashe10#1'
+EMAIL_PORT = ''  # email_settings.email_port  # 587
+EMAIL_HOST_USER = ''  # email_settings.support_reply_email  # 'titusowuor30@gmail.com'
+EMAIL_HOST_PASSWORD = ''  # email_settings.email_password  # 'xdofqrtncuimlewm'
+
+TINYMCE_JS_ROOT = os.path.join('static')
+TINYMCE_DEFAULT_CONFIG = {
+
+    'height': 540,
+    'width': 920,
+    'cleanup_on_startup': True,
+    'custom_undo_redo_levels': 20,
+    'selector': 'textarea',
+    'theme': 'silver',
+    'plugins': '''
+   textcolor save link image media preview codesample contextmenu
+   table code lists fullscreen insertdatetime nonbreaking
+   contextmenu directionality searchreplace wordcount visualblocks
+   visualchars code fullscreen autolink lists charmap print hr
+   anchor pagebreak help
+   ''',
+    'toolbar1': '''
+   fullscreen preview bold italic underline | fontselect,
+   fontsizeselect | forecolor backcolor | alignleft alignright |
+   aligncenter alignjustify | indent outdent | bullist numlist table |
+   | link image media | codesample |
+   ''',
+    'toolbar2': '''
+   visualblocks visualchars |
+   charmap hr pagebreak nonbreaking anchor | code |
+   ''',
+    'contextmenu': 'formats | link image',
+    'menubar': True,
+    'statusbar': True,
+}
+#TINYMCE_SPELLCHECKER = True
+TINYMCE_COMPRESSOR = False
+TINYMCE_JS_URL = os.path.join('tinymce', "tinymce.min.js")
+# TINYMCE_EXTRA_MEDIA = {
+#     'css': {
+#         'all': [
+#             ...
+#         ],
+#     },
+#     'js': [
+#         ...
+#     ],
+# }
